@@ -24,6 +24,7 @@ class Config(PretrainedConfig):
         self,
         lr: float = 1e-3,
         wd: float = 0.5,
+        l1: float = 0.0,
         epochs: int = 100,
         batch_size: int = 2048,
         d_hidden: int = 256,
@@ -37,6 +38,7 @@ class Config(PretrainedConfig):
     ):
         self.lr = lr
         self.wd = wd
+        self.l1 = l1
         self.epochs = epochs
         self.batch_size = batch_size
         self.seed = seed
@@ -131,6 +133,11 @@ class Model(PreTrainedModel):
             epoch = []
             for x, y in loader:
                 loss, acc = self.train().step(x, y)
+    
+                if self.config.l1 > 0:
+                    l1_norm = sum(p.abs().sum() for n, p in self.named_parameters() if "weight" in n)
+                    loss = loss + self.config.l1 * l1_norm
+    
                 epoch += [(loss.item(), acc.item())]
                 
                 optimizer.zero_grad()
